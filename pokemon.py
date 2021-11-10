@@ -7,7 +7,11 @@ def get_random_number():
     random_number = random.randint(1, 151)
     return random_number
 
-
+def get_pokemon(number_id):
+    url = 'https://pokeapi.co/api/v2/pokemon/{}/'.format(number_id) 
+    response = requests.get(url)
+    pokemon = response.json()
+    return pokemon
 
 
 
