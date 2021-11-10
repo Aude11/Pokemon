@@ -11,10 +11,8 @@ def get_pokemon(number_id):
     url = 'https://pokeapi.co/api/v2/pokemon/{}/'.format(number_id) 
     response = requests.get(url)
     pokemon = response.json()
+    print(pokemon)
     return pokemon
-
-
-
 
 def random_pokemon():
     pokemon_number = random.randint(1, 151)
@@ -24,7 +22,9 @@ def random_pokemon():
     pokemon_dict = {
     'name': pokemon['name'], 'id': pokemon['id'],
     'height': pokemon['height'], 'weight': pokemon['weight'],
+    'type1': pokemon['types'][0]
     }
+    print("test", pokemon_dict)
     return pokemon_dict
 
 def run():
@@ -43,3 +43,4 @@ def run():
         print("Try again")
 
 run()
+
