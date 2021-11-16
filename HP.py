@@ -3,7 +3,7 @@ import random
 import requests
 import urllib.request
 import pandas as pd
-from PIL import Image, ImageDraw  
+from PIL import Image, ImageDraw, ImageFont
 import os
 import time
  
@@ -16,7 +16,7 @@ def run():
     print("You are {}".format(player_A['name']))
     score_record = read_score()
     print("Let's fight!")
-    create_picture(player_A, player_B)
+    merge_pictures(player_A, player_B)
     play(player_A, player_B, score_record)
     time.sleep(10) # Sleep for 3 seconds
     clear_pictures(player_A, player_B)
@@ -30,23 +30,21 @@ def clear_pictures(player_A, player_B):
     if os.path.exists("image.jpg"):
         os.remove("image.jpg")
 
-def create_picture(player_A, player_B):
-    url_image_player_A = player_A['image']
-    name_player_A = player_A['name']
-    url_image_player_B = player_B['image']
-    name_player_B = player_B['name']
-
-    with urllib.request.urlopen(url_image_player_A) as url:
-        with open( name_player_A + '.jpg', 'wb') as f:
+def create_picture(player):
+    url_image_player = player['image']
+    name_player= player['name']
+    with urllib.request.urlopen(url_image_player) as url:
+        with open( name_player+ '.jpg', 'wb') as f:
             f.write(url.read())
-    image_player_A = Image.open(name_player_A + '.jpg')
+    image_player = Image.open(name_player + '.jpg')
+    return image_player
 
-    with urllib.request.urlopen(url_image_player_B) as url:
-        with open( name_player_B + '.jpg', 'wb') as f:
-            f.write(url.read())
-    image_player_B = Image.open(name_player_B + '.jpg')
 
-    width, height = image_player_A .size
+def merge_pictures(player_A, player_B):
+    image_player_A = create_picture(player_A)
+    image_player_B = create_picture(player_B)
+
+    width, height = image_player_A.size
     image_player_B= image_player_B.resize((width, height))
     new_image = Image.new('RGB',(width*2, height))
     new_image.paste(image_player_A ,(0,0))
@@ -56,8 +54,8 @@ def create_picture(player_A, player_B):
     img_lightning_bolt = img_lightning_bolt.resize((round(width_img_lightning_bolt/10), round(height_img_lightning_bolt/10)))
     width_img_lightning_bolt, height_img_lightning_bolt = img_lightning_bolt.size
     new_image.paste(img_lightning_bolt,(width - (round(width_img_lightning_bolt/2)),round(height/5)))
+    write_on_image(new_image, player_A, player_B)
     new_image.save("image.jpg","JPEG")
-    new_image.show()
 
 def play(player_A, player_B, score_record):
     if (player_A['wizard'] is False) and (player_B['wizard'] is False):
@@ -68,20 +66,53 @@ def play(player_A, player_B, score_record):
             player_A['life_point'], player_B['life_point'] = attack(player_A, player_B)
             continue_round = evaluate_life_point(player_A, player_B, score_record)
 
+def write_on_image(image, player_A, player_B):
+    width, height = image.size
+    draw = ImageDraw.Draw(image)
+    text_right = "Player A is " + player_A['name']
+    text_left = "Player B is " + player_B['name']
+    font = ImageFont.truetype('Verdana.ttf', 14)
+    textwidth, textheight = draw.textsize(text_right, font)
+    textwidth_left, textheight_left = draw.textsize(text_left, font)
+    # calculate the x,y coordinates of the text
+    margin = 20
+    x_left = width - textwidth_left - margin
+    x_right = margin
+    y = height - textheight - margin*2
+
+    # draw 
+    draw.text((x_right, y), text_right, font=font)
+    draw.text((x_left, y), text_left, font=font)
+    image.show()
+
+def display_winner(player):
+    image_player = Image.open(player['name'] + '.jpg')
+    width, height = image_player.size
+    draw = ImageDraw.Draw(image_player)
+    text = player['name'] + " Win!"
+    font = ImageFont.truetype('Verdana.ttf', 16)
+    textwidth, textheight = draw.textsize(text, font)
+    # calculate the x,y coordinates of the text
+    margin = 20
+    x = width - textwidth - margin
+    y = height - textheight - margin*2
+
+    # draw watermark in the bottom right corner
+    draw.text((x, y), text, font=font)
+    image_player.show()
+
 def evaluate_life_point(player_A, player_B, score_record):
     if (player_A['life_point'] <= 0) and (player_B['life_point'] > 0):
         print("Player B win")
         score_record.loc[score_record["name"]==player_B['name'], "score"] += 10
         score_record.to_csv("score_HP.csv", index=False)
-        image_player_B = Image.open(player_B['name'] + '.jpg')
-        image_player_B.show()
+        display_winner(player_B)
         return False
     elif (player_A['life_point'] > 0) and (player_B['life_point'] <= 0):
         print("Player A win")
         score_record.loc[score_record["name"]==player_A['name'], "score"] += 10
         score_record.to_csv("score_HP.csv", index=False)
-        image_player_A = Image.open(player_A['name'] + '.jpg')
-        image_player_A.show()
+        display_winner(player_A)
         return False
     elif (player_A['life_point'] <= 0) and (player_B['life_point'] <= 0):
         print("Epic Fail!\n Your are both lose.")
@@ -114,6 +145,7 @@ def computer_cast_spell(player_attacked, player_attacking):
                    'EXPELLIARMUS', 'SECTUMSEMPRA']
     random_attack = random.randint(0, len(attacks) - 1)
     attack = attacks[random_attack]
+    print(player_attacking['name'] + " attacks with " + attack)
     player_attacked['life_point'] = calculate_damage(attack, player_attacked, player_attacking)
     return player_attacked['life_point']
 
@@ -178,8 +210,8 @@ def select_only_character_with_image(data):
     return characters
 
 def get_player(data_from_api):
-    number_characters = len(data_from_api)
-    number_random_player = random.randint(0, number_characters)
+    number_characters = len(data_from_api) 
+    number_random_player = random.randint(0, number_characters - 1)
     #random.sample(range(0, number_characters), 3)
     player = data_from_api[number_random_player]
     player_character = create_character(player)
