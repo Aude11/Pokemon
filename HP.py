@@ -1,8 +1,11 @@
 import csv
 import random
 import requests
+import urllib.request
 import pandas as pd
-import os.path
+from PIL import Image, ImageDraw  
+import os
+import time
  
 
 def run():
@@ -13,11 +16,52 @@ def run():
     print("You are {}".format(player_A['name']))
     score_record = read_score()
     print("Let's fight!")
+    create_picture(player_A, player_B)
     play(player_A, player_B, score_record)
+    time.sleep(10) # Sleep for 3 seconds
+    clear_pictures(player_A, player_B)
+
+
+def clear_pictures(player_A, player_B):
+    if os.path.exists(player_A['name'] + ".jpg"):
+        os.remove(player_A['name'] + ".jpg")
+    if os.path.exists(player_B['name'] + ".jpg"):
+        os.remove(player_B['name'] + ".jpg")
+    if os.path.exists("image.jpg"):
+        os.remove("image.jpg")
+
+def create_picture(player_A, player_B):
+    url_image_player_A = player_A['image']
+    name_player_A = player_A['name']
+    url_image_player_B = player_B['image']
+    name_player_B = player_B['name']
+
+    with urllib.request.urlopen(url_image_player_A) as url:
+        with open( name_player_A + '.jpg', 'wb') as f:
+            f.write(url.read())
+    image_player_A = Image.open(name_player_A + '.jpg')
+
+    with urllib.request.urlopen(url_image_player_B) as url:
+        with open( name_player_B + '.jpg', 'wb') as f:
+            f.write(url.read())
+    image_player_B = Image.open(name_player_B + '.jpg')
+
+    width, height = image_player_A .size
+    image_player_B= image_player_B.resize((width, height))
+    new_image = Image.new('RGB',(width*2, height))
+    new_image.paste(image_player_A ,(0,0))
+    new_image.paste(image_player_B ,(width,0))
+    img_lightning_bolt = Image.open('lightning_bolt.png')
+    width_img_lightning_bolt, height_img_lightning_bolt = img_lightning_bolt.size
+    img_lightning_bolt = img_lightning_bolt.resize((round(width_img_lightning_bolt/10), round(height_img_lightning_bolt/10)))
+    width_img_lightning_bolt, height_img_lightning_bolt = img_lightning_bolt.size
+    new_image.paste(img_lightning_bolt,(width - (round(width_img_lightning_bolt/2)),round(height/5)))
+    new_image.save("image.jpg","JPEG")
+    new_image.show()
 
 def play(player_A, player_B, score_record):
     if (player_A['wizard'] is False) and (player_B['wizard'] is False):
-        print("Epic Fail, your are both moduls!")  
+        print("Epic Fail, your are both muggles!")  
     else:
         continue_round = True
         while continue_round is True:
@@ -29,11 +73,15 @@ def evaluate_life_point(player_A, player_B, score_record):
         print("Player B win")
         score_record.loc[score_record["name"]==player_B['name'], "score"] += 10
         score_record.to_csv("score_HP.csv", index=False)
+        image_player_B = Image.open(player_B['name'] + '.jpg')
+        image_player_B.show()
         return False
     elif (player_A['life_point'] > 0) and (player_B['life_point'] <= 0):
         print("Player A win")
         score_record.loc[score_record["name"]==player_A['name'], "score"] += 10
         score_record.to_csv("score_HP.csv", index=False)
+        image_player_A = Image.open(player_A['name'] + '.jpg')
+        image_player_A.show()
         return False
     elif (player_A['life_point'] <= 0) and (player_B['life_point'] <= 0):
         print("Epic Fail!\n Your are both lose.")
@@ -118,11 +166,21 @@ def get_data_from_HP_api():
     url = 'http://hp-api.herokuapp.com/api/characters' 
     response = requests.get(url)
     data = response.json()
+    data = select_only_character_with_image(data)
     return data
+
+def select_only_character_with_image(data):
+    nb = len(data)
+    characters = []
+    for i in range(nb):
+        if (data[i]['image'] != ""):
+            characters.append(data[i])
+    return characters
 
 def get_player(data_from_api):
     number_characters = len(data_from_api)
     number_random_player = random.randint(0, number_characters)
+    #random.sample(range(0, number_characters), 3)
     player = data_from_api[number_random_player]
     player_character = create_character(player)
     return player_character 
@@ -148,7 +206,8 @@ def create_character(player):
     'name': player['name'], 'species': player['species'],
     'house': player['house'], 'wizard': player['wizard'],
     'hogwartsStudent': player['hogwartsStudent'], 'hogwartsStaff': player['hogwartsStaff'],
-    'patronus': player['patronus'], 'life_point': life_point, 'spells' : spells
+    'patronus': player['patronus'], 'image': player['image'],
+    'life_point': life_point, 'spells' : spells
     }
     return player_dict
 
