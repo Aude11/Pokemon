@@ -1,5 +1,10 @@
 import random
 import requests
+import time
+
+print("Welcome To Our Pokemon Game!")
+print("\n")
+time.sleep(1)
 
 
 def get_random_number_up_to_151():
