@@ -48,17 +48,25 @@ def get_round():
 
 def play(my_score, opponent_score):
     pokemon = select_pokemon()
+    print("\n")
     stat_choice = input('Which stat do you want to use? (id, height, weight) ')
+    time.sleep(1)
     opponent_pokemon = random_pokemon()
+    print("\n")
     print('The opponent chose {}'.format(opponent_pokemon['name']))
     my_stat = pokemon[stat_choice]
     opponent_stat = opponent_pokemon[stat_choice]
     if my_stat > opponent_stat:
+        print("\n")
+        time.sleep(1)
         print("You win this round!")
+        print("\n")
         my_score += 1
         return my_score, opponent_score
     elif my_stat < opponent_stat:
+        print("\n")
         print("You lose this round!")
+        print("\n")
         opponent_score += 1
         return my_score, opponent_score
     else:
@@ -68,18 +76,23 @@ def play(my_score, opponent_score):
 
 def run():
     player_name = input('What is your name?')
+    print("\n")
     number_rounds = get_round()
+    time.sleep(1)
     print('There are {} rounds'.format(number_rounds))
+    print("\n")
     player_score = 0
     opponent_score = 0
     for i in range(number_rounds):
         player_score, opponent_score = play(player_score, opponent_score)
     if player_score > opponent_score:
+        print("\n")
         print("You won the game!")
         store_player_score_into_file(player_name, player_score)
     elif player_score < opponent_score:
         print("You lost the game!")
     else:
+        time.sleep(1)
         print("Try again")
 
 
