@@ -6,6 +6,10 @@ import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 import os
 import time
+print("\n")
+print("Welcome to our Harry potter battle game!")
+print("\n")
+time.sleep(1)
 
 
 def run():
